@@ -1,0 +1,9 @@
+db_gastos/
+│── src/
+│   ├── models/          # Clases de dominio (Gasto, Usuario)
+│   ├── repositories/    # Acceso a datos (MySQLRepositorio)
+│   ├── services/        # Lógica de negocio (GastoService)
+│   ├── controllers/     # Entrada/salida (API, CLI)
+│   └── config/          # Configuración (cadena de conexión, settings)
+│── tests/               # Pruebas unitarias
+│── main.py              # Punto de entrada
