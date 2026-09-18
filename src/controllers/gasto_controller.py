@@ -1,9 +1,12 @@
 from datetime import datetime
 from src.services.gasto_service import GastoService
+from src.services.estadisticas_service import EstadisticasService
+
 
 class GastoController:
-    def __init__(self, service: GastoService):
+    def __init__(self, service: GastoService, estadisticas: EstadisticasService):
         self.service = service
+        self.estadisticas = estadisticas
 
     def menu(self):
         while True:
@@ -12,7 +15,8 @@ class GastoController:
             print("2. Listar gastos")
             print("3. Actualizar gasto")
             print("4. Eliminar gasto")
-            print("5. Salir")
+            print("5. Ver estadísticas")
+            print("6. Salir")
             opcion = input("Elegí una opción: ").strip()
 
             if opcion == "1":
@@ -24,6 +28,8 @@ class GastoController:
             elif opcion == "4":
                 self._eliminar_gasto()
             elif opcion == "5":
+                self._ver_estadisticas()
+            elif opcion == "6":
                 print("Saliendo...")
                 break
             else:
@@ -41,31 +47,38 @@ class GastoController:
         except ValueError as e:
             print(f"❌ Error: {e}")
 
+        input("\nPresioná Enter para continuar...")
+
     def _listar_gastos(self):
         gastos = self.service.listar_gastos()
         if not gastos:
             print("No hay gastos registrados todavía.")
-            return
-        print("\n--- Gastos registrados ---")
-        for g in gastos:
-            print(f"{g.id} | {g.fecha} | {g.categoria:15} | {g.nombre:20} ${g.monto}")
+        else:
+            print("\n--- Gastos registrados ---")
+            for g in gastos:
+                print(f"{g.id} | {g.fecha} | {g.categoria:15} | {g.nombre:20} ${g.monto}")
+
+        input("\nPresioná Enter para continuar...")
 
     def _actualizar_gasto(self):
-        self._listar_gastos()
+        self._listar_gastos_sin_pausa()
         valor = input("\nID del gasto a actualizar (o vacío para cancelar): ").strip()
         if valor == "":
             print("Cancelado.")
+            input("\nPresioná Enter para continuar...")
             return
         try:
             gasto_id = int(valor)
         except ValueError:
             print("❌ Ingresá un número de ID válido.")
+            input("\nPresioná Enter para continuar...")
             return
 
         try:
             actual = self.service.obtener_gasto(gasto_id)
         except ValueError as e:
             print(f"❌ Error: {e}")
+            input("\nPresioná Enter para continuar...")
             return
 
         print(f"\nEditando: {actual.nombre} | {actual.categoria} | ${actual.monto} | {actual.fecha}")
@@ -98,16 +111,20 @@ class GastoController:
         except ValueError as e:
             print(f"❌ Error: {e}")
 
+        input("\nPresioná Enter para continuar...")
+
     def _eliminar_gasto(self):
-        self._listar_gastos()
+        self._listar_gastos_sin_pausa()
         valor = input("\nID del gasto a eliminar (o vacío para cancelar): ").strip()
         if valor == "":
             print("Cancelado.")
+            input("\nPresioná Enter para continuar...")
             return
         try:
             gasto_id = int(valor)
         except ValueError:
             print("❌ Ingresá un número de ID válido.")
+            input("\nPresioná Enter para continuar...")
             return
 
         try:
@@ -115,6 +132,59 @@ class GastoController:
             print(f"🗑️ Eliminado: {gasto.nombre} - ${gasto.monto}")
         except ValueError as e:
             print(f"❌ Error: {e}")
+
+        input("\nPresioná Enter para continuar...")
+
+    def _ver_estadisticas(self):
+        print("\n=== Estadísticas ===")
+        print("1. Resumen por categoría")
+        print("2. Resumen por mes")
+        print("3. Total de una categoría específica")
+        sub = input("Elegí una opción: ").strip()
+
+        año_input = input("Filtrar por año (vacío = todos): ").strip()
+        año = int(año_input) if año_input else None
+
+        if sub == "1":
+            mes_input = input("Filtrar por mes, 1-12 (vacío = todos): ").strip()
+            mes = int(mes_input) if mes_input else None
+            resumen = self.estadisticas.resumen_por_categoria(año=año, mes=mes)
+            if not resumen:
+                print("No hay datos para ese período.")
+            else:
+                print("\n--- Gasto por categoría ---")
+                for cat, total in resumen.items():
+                    print(f"{cat:20} ${total:.2f}")
+
+        elif sub == "2":
+            resumen = self.estadisticas.resumen_por_mes(año=año)
+            if not resumen:
+                print("No hay datos para ese período.")
+            else:
+                print("\n--- Gasto por mes ---")
+                for mes, total in resumen.items():
+                    print(f"{mes:10} ${total:.2f}")
+
+        elif sub == "3":
+            categoria = input("Categoría a consultar: ").strip()
+            mes_input = input("Filtrar por mes, 1-12 (vacío = todos): ").strip()
+            mes = int(mes_input) if mes_input else None
+            resultado = self.estadisticas.total_por_categoria(categoria, año=año, mes=mes)
+            print(f"\n{resultado['categoria']}: ${resultado['total']:.2f} ({resultado['cantidad']} gastos)")
+        else:
+            print("Opción inválida.")
+
+        input("\nPresioná Enter para continuar...")
+
+    def _listar_gastos_sin_pausa(self):
+        """Versión de listar sin el input de pausa, para usar dentro de otros métodos."""
+        gastos = self.service.listar_gastos()
+        if not gastos:
+            print("No hay gastos registrados todavía.")
+            return
+        print("\n--- Gastos registrados ---")
+        for g in gastos:
+            print(f"{g.id} | {g.fecha} | {g.categoria:15} | {g.nombre:20} ${g.monto}")
 
     def _pedir_monto(self):
         while True:

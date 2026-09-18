@@ -1,6 +1,7 @@
 from src.config.database import SessionLocal, Base, engine
 from src.repositories.gasto_repository import GastoRepository
 from src.services.gasto_service import GastoService
+from src.services.estadisticas_service import EstadisticasService
 from src.controllers.gasto_controller import GastoController
 
 def main():
@@ -9,7 +10,8 @@ def main():
     session = SessionLocal()
     repo = GastoRepository(session)
     service = GastoService(repo)
-    controller = GastoController(service)
+    estadisticas = EstadisticasService(repo)
+    controller = GastoController(service, estadisticas)
 
     controller.menu()
 
